@@ -1023,10 +1023,8 @@ def main_game(screen_size, num_uni_scale=1.0, num_time_limit=0):
         num_gunpoint = 0
         arr_UncontrolObjects.append(UncontrolObject(player.arr_fire_point[num_gunpoint], player.num_angle[0], player.param_weapon["speed"][2], player.param_weapon["lasttime"][2], player.param_weapon["arr_color"][2], player.param_weapon["arr_shape"][2] , arr_dmg=[player.param_weapon["num_HP_damage"][2], player.param_weapon["num_SH_damage"][2],player.param_weapon["num_EP_damage"][2]]))
 
-
     if pressed[pygame.K_z]:
       player.locking_system()
-
     # Cooling down
     sys_cd_time(time_tick, "laser" , player.param_weapon)
     sys_cd_time(time_tick, "ion"   , player.param_weapon)
@@ -1047,19 +1045,6 @@ def main_game(screen_size, num_uni_scale=1.0, num_time_limit=0):
     if pressed[pygame.K_ESCAPE] :
       game_quit()
       break
-
-#   Draw Coodination
-#    arr_grid_on = []
-#    for j in range(arr_num_grid[1]):
-#      for i in range(arr_num_grid[0]):
-#        if arr_coord_XY[j][i][0] <= arr_ss1[0] and arr_coord_XY[j][i][1] <= arr_ss1[1]:
-#          arr_grid_on.append([i,j])
-#    num_grid_on = len(arr_grid_on)
-#    for num_gr in range(num_grid_on):
-#  chk_X = arr_grid_on[num_gr][0]
-#      chk_Y = arr_grid_on[num_gr][1]
-
-
 
 # ------------------------------------- #
 #              Load Enemies             #
@@ -1144,7 +1129,16 @@ def main_game(screen_size, num_uni_scale=1.0, num_time_limit=0):
                 arr_MotionObjects[num_mo].turn_system(True, False)
             else:
                 arr_MotionObjects[num_mo].turn_system(False, True)
-                
+            if num_ran3 > 0.9:
+                arr_MotionObjects[num_mo].fire_weapon(num_game_time=time_tick, if_fire=True)
+                if arr_MotionObjects[num_mo].param_weapon["if_fire"][0]:
+                #obj_s_blast.play()
+                    for n in range(len(arr_MotionObjects[num_mo].arr_gun_point)):
+                        arr_UncontrolObjects.append(UncontrolObject(arr_MotionObjects[num_mo].arr_fire_point[n], arr_MotionObjects[num_mo].num_angle[0]     , arr_MotionObjects[num_mo].param_weapon["speed"][0], arr_MotionObjects[num_mo].param_weapon["lasttime"][0], arr_MotionObjects[num_mo].param_weapon["arr_color"][0], arr_MotionObjects[num_mo].param_weapon["arr_shape"][0] , arr_dmg=[arr_MotionObjects[num_mo].param_weapon["num_HP_damage"][0], arr_MotionObjects[num_mo].param_weapon["num_SH_damage"][0],arr_MotionObjects[num_mo].param_weapon["num_EP_damage"][0]]))
+                else:
+                    arr_MotionObjects[num_mo].fire_weapon(num_game_time=time_tick, if_fire=False)
+
+ 	    
         else:
             arr_MotionObjects[num_mo].tilt_system(False, False, False)
             arr_MotionObjects[num_mo].power_system(False, False, False)
