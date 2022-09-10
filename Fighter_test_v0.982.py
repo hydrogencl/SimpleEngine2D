@@ -1,7 +1,5 @@
+import random, math
 import pygame
-import math,re
-import random
-
 ####--------------------------------------------------------------#### 
 # Version 0.98: Need to add AI for missile or enemy                  #
 #             :    - Add/appoint specific obj for AI                 # 
@@ -119,8 +117,8 @@ class MotionObject:
     arr_missile         = []
 
     param_ai       = {"Detect_Radius"  : 200   ,\
-	              "Moving_Pattern" : "line",\
-	              "Moving_Radius"  : 600   ,\
+                  "Moving_Pattern" : "line",\
+                  "Moving_Radius"  : 600   ,\
     }
 
     # Input Parameters
@@ -227,7 +225,7 @@ class MotionObject:
             self.arr_force_scale[0]   +=  -1.0 * self.arr_force_power[0]
             self.num_angle[1] = 180
             self.num_tilt -= self.num_tilt_speed  #* self.arr_force_power[0]
-	self.num_tilt = max(self.num_tilt, -1*self.num_max_tilt)
+        self.num_tilt = max(self.num_tilt, -1*self.num_max_tilt)
         if not if_power:
             self.arr_force_scale[0] = 0 
             self.num_angle[1] =   0
@@ -555,6 +553,22 @@ def shiftpos(arr_pos, arr_center):
   return arr_out
 
 #------------------------------------#
+#              DRAWING TOOL          # 
+#  The tools for drawing with line.  #
+#------------------------------------#
+
+def draw_obj(object_in, surface, if_close, width, arr_camera_para):
+    arr_in = coord_object_full(object_in.arr_body, 
+                               object_in.arr_pos, 
+                               num_tilt = object_in.num_tilt,
+                               num_angle=object_in.num_angle[0],
+                               num_scale=object_in.num_scale,
+                               arr_center=object_in.arr_hit_center)
+    arr_final_in = pos_os(arr_in, arr_camera_para)
+    pygame.draw.lines(surface, object_in.arr_color, if_close, arr_final_in)
+
+
+#------------------------------------#
 #              EFFECTS               # 
 # There will be object of effect     #
 #------------------------------------#
@@ -615,17 +629,17 @@ def collision_vel(arr_vel_o1, arr_pos_o1, num_mass_o1, num_angle_o1, arr_vel_o2,
 
     num_angle_n1 = num_C2P(arr_pos_o2, arr_pos_o1)[1]
     num_angle_n2 = num_C2P(arr_pos_o1, arr_pos_o2)[1]
-#print("num_angle_n1", num_angle_n1, "num_angle_n2", num_angle_n2)
+    print("num_angle_n1", num_angle_n1, "num_angle_n2", num_angle_n2)
     num_angle_diff_o1Y = math.fmod(num_angle_n1 - num_angle_o1[0] + 360    , 360 )
     num_angle_diff_o2Y = math.fmod(num_angle_n2 - num_angle_o2[0] + 360    , 360 ) 
     num_angle_diff_o1X = math.fmod(num_angle_o1[0] + 90 - num_angle_n1 + 360, 360) 
     num_angle_diff_o2X = math.fmod(num_angle_o2[0] + 90 - num_angle_n2 + 360, 360) 
-#print("num_angle_diff_o1X", num_angle_diff_o1X, "num_angle_diff_o2X", num_angle_diff_o2X) 
+    print("num_angle_diff_o1X", num_angle_diff_o1X, "num_angle_diff_o2X", num_angle_diff_o2X) 
     num_o1v1_loss = a_cos(num_angle_diff_o1Y) * (arr_vel_o1[1] )
     num_o1v0_loss = a_cos(num_angle_diff_o1X) * (arr_vel_o1[0] ) 
     
 # Temp solution
-    if arr_vel_o1 > 0:
+    if arr_vel_o1[0] > 0:
         tmp_angle = 0
     else: 
         tmp_angle = 180
@@ -643,116 +657,6 @@ def collision_vel(arr_vel_o1, arr_pos_o1, num_mass_o1, num_angle_o1, arr_vel_o2,
 
     return [ num_vX_o1, num_vY_o1, num_vX_o2, num_vY_o2] 
 
-def collision_vel_bk2(arr_vel_o1, arr_pos_o1, num_mass_o1, num_angle_o1, arr_vel_o2, arr_pos_o2, num_mass_o2, num_angle_o2):
-    """
-    PS: the loss of velocity is wrong now. should be calculated as 
-    V_loss = 2(m1v1 -m2v1)/(m1+m2)
-    only the direction of -x did not solve
-    Backup if mess-up
-    """
-    num_vX_o1        = 0.0
-    num_vY_o1        = 0.0
-    num_vX_o2        = 0.0
-    num_vY_o2        = 0.0
-
-    num_total_mass    = num_mass_o1 + num_mass_o2
-    num_mass_parti_o1 = num_mass_o2 / num_total_mass
-    num_mass_parti_o2 = num_mass_o1 / num_total_mass
-
-    num_angle_n = math.fmod(num_C2P(arr_pos_o2, arr_pos_o1)[1], 360) #- 180.0
-    num_angle_diff_o1Y = num_angle_n - math.fmod(num_angle_o1[0], 360)
-    num_angle_diff_o2Y = num_angle_n - math.fmod(num_angle_o2[0], 360) 
-    num_angle_diff_o1X = num_angle_n - math.fmod(num_angle_o1[0]+90, 360) 
-    num_angle_diff_o2X = num_angle_n - math.fmod(num_angle_o2[0]+90, 360) 
-
-    num_o1v1_loss = a_cos(num_angle_diff_o1Y) * (arr_vel_o1[1] )
-    num_o1v0_loss = a_cos(num_angle_diff_o1X) * (arr_vel_o1[0] ) 
-    num_o2v1_loss = a_cos(num_angle_diff_o2Y) * (arr_vel_o2[1] )
-    num_o2v0_loss = a_cos(num_angle_diff_o2X) * (arr_vel_o2[0] ) 
-
-    num_vY_o1 -=  num_o1v1_loss * a_cos(num_angle_diff_o1Y) * num_mass_parti_o1 
-    num_vX_o1 -=  num_o1v1_loss * a_sin(num_angle_diff_o1Y) * num_mass_parti_o1
-    num_vY_o2 +=  num_o1v1_loss * a_cos(num_angle_diff_o2Y) * num_mass_parti_o2 
-    num_vX_o2 +=  num_o1v1_loss * a_sin(num_angle_diff_o2Y) * num_mass_parti_o2
-
-    num_vY_o1 +=  num_o2v1_loss * a_cos(num_angle_diff_o1Y) * num_mass_parti_o1 
-    num_vX_o1 +=  num_o2v1_loss * a_sin(num_angle_diff_o1Y) * num_mass_parti_o1
-    num_vY_o2 -=  num_o2v1_loss * a_cos(num_angle_diff_o2Y) * num_mass_parti_o2 
-    num_vX_o2 -=  num_o2v1_loss * a_sin(num_angle_diff_o2Y) * num_mass_parti_o2
-
-    num_vY_o1 -=  num_o1v0_loss * a_sin( num_angle_diff_o1X) * num_mass_parti_o1 
-    num_vX_o1 -=  num_o1v0_loss * a_cos( num_angle_diff_o1X) * num_mass_parti_o1 
-    num_vY_o2 +=  num_o1v0_loss * a_sin( num_angle_diff_o2X) * num_mass_parti_o2 
-    num_vX_o2 +=  num_o1v0_loss * a_cos( num_angle_diff_o2X) * num_mass_parti_o2 
-
-    num_vY_o1 +=  num_o2v0_loss * a_sin( num_angle_diff_o1X) * num_mass_parti_o1 
-    num_vX_o1 +=  num_o2v0_loss * a_cos( num_angle_diff_o1X) * num_mass_parti_o1 
-    num_vY_o2 -=  num_o2v0_loss * a_sin( num_angle_diff_o2X) * num_mass_parti_o2 
-    num_vX_o2 -=  num_o2v0_loss * a_cos( num_angle_diff_o2X) * num_mass_parti_o2 
-
-    return [ num_vX_o1, num_vY_o1, num_vX_o2, num_vY_o2] 
-
-def collision_vel_BK2(arr_vel_o1, arr_pos_o1, num_mass_o1, num_angle_o1, arr_vel_o2, arr_pos_o2, num_mass_o2, num_angle_o2):
-    """
-    PS: the loss of velocity is wrong now. should be calculated as 
-    V_loss = 2(m1v1 -m2v1)/(m1+m2)
-    only the direction of -x did not solve
-    Backup if mess-up
-    """
-    num_vX_o1        = 0.0
-    num_vY_o1        = 0.0
-    num_vX_o2        = 0.0
-    num_vY_o2        = 0.0
-
-    num_total_mass    = num_mass_o1 + num_mass_o2
-    num_mass_parti_o1 = num_mass_o2 / num_total_mass
-    num_mass_parti_o2 = num_mass_o1 / num_total_mass
-
-    num_angle_n = math.fmod(num_C2P(arr_pos_o2, arr_pos_o1)[1], 360) #- 180.0
-    num_angle_diff_o1Y = num_angle_n - math.fmod(num_angle_o1[0], 360)
-    num_angle_diff_o2Y = num_angle_n - math.fmod(num_angle_o2[0], 360) 
-# new 
-#num_angle_diff_o1X = min( max( math.fmod(num_angle_o1[0]+90, 360) - num_angle_n , -90), 90)
-#num_angle_diff_o2X = min( max( math.fmod(num_angle_o2[0]+90, 360) - num_angle_n , -90), 90)
-# old
-    num_angle_diff_o1X = math.fmod(num_angle_o1[0]+90, 360) - num_angle_n
-    num_angle_diff_o2X = math.fmod(num_angle_o2[0]+90, 360) - num_angle_n 
-
-#print("DIFF Y", num_angle_diff_o1Y, num_angle_diff_o2Y)
-#print("DIFF X", num_angle_diff_o1X, num_angle_diff_o2X)
-    num_o1v1_loss = a_cos(num_angle_diff_o1Y) * (arr_vel_o1[1] )
-    num_o1v0_loss = a_cos(min(max(num_angle_diff_o1X, -90), 90)) * (arr_vel_o1[0] ) * a_cos(num_angle_o1[1])
-    num_o2v1_loss = a_cos(num_angle_diff_o2Y) * (arr_vel_o2[1] )
-    num_o2v0_loss = a_cos(min(max(num_angle_diff_o2X, -90), 90)) * (arr_vel_o2[0] ) * a_cos(num_angle_o2[1])
-
-#print("NUM_o1v0_loss", num_o1v0_loss, "NUM_o2v0_loss", num_o2v0_loss)
-
-    num_vY_o1 -=  num_o1v1_loss * a_cos(num_angle_diff_o1Y) * num_mass_parti_o1 
-    num_vX_o1 -=  num_o1v1_loss * a_sin(num_angle_diff_o1Y) * num_mass_parti_o1
-    num_vY_o2 +=  num_o1v1_loss * a_cos(num_angle_diff_o2Y) * num_mass_parti_o2 
-    num_vX_o2 +=  num_o1v1_loss * a_sin(num_angle_diff_o2Y) * num_mass_parti_o2
-
-    num_vY_o1 +=  num_o2v1_loss * a_cos(num_angle_diff_o1Y) * num_mass_parti_o1 
-    num_vX_o1 +=  num_o2v1_loss * a_sin(num_angle_diff_o1Y) * num_mass_parti_o1
-    num_vY_o2 -=  num_o2v1_loss * a_cos(num_angle_diff_o2Y) * num_mass_parti_o2 
-    num_vX_o2 -=  num_o2v1_loss * a_sin(num_angle_diff_o2Y) * num_mass_parti_o2
-
-    num_vY_o1 -=  num_o1v0_loss * a_sin( num_angle_diff_o1X) * num_mass_parti_o1 * a_cos(num_angle_o1[1])
-    num_vX_o1 -=  num_o1v0_loss * a_cos( num_angle_diff_o1X) * num_mass_parti_o1 * a_cos(num_angle_o1[1])
-    num_vY_o2 +=  num_o1v0_loss * a_sin( num_angle_diff_o2X) * num_mass_parti_o2 * a_cos(num_angle_o2[1])
-    num_vX_o2 +=  num_o1v0_loss * a_cos( num_angle_diff_o2X) * num_mass_parti_o2 * a_cos(num_angle_o2[1])
-    # old
-#    num_vY_o1 +=  num_o2v0_loss * a_sin( num_angle_diff_o1X) * num_mass_parti_o1 * a_cos(num_angle_o2[1])
-#    num_vX_o1 +=  num_o2v0_loss * a_cos( num_angle_diff_o1X) * num_mass_parti_o1 * a_cos(num_angle_o2[1])
-#    num_vY_o2 -=  num_o2v0_loss * a_sin( num_angle_diff_o2X) * num_mass_parti_o2 * a_cos(num_angle_o2[1])
-#    num_vX_o2 -=  num_o2v0_loss * a_cos( num_angle_diff_o2X) * num_mass_parti_o2 * a_cos(num_angle_o2[1])
-    # new
-#    num_vY_o1 +=  num_o2v0_loss * a_sin( num_angle_diff_o1X) * num_mass_parti_o1 
-#    num_vX_o1 +=  num_o2v0_loss * a_cos( num_angle_diff_o1X) * num_mass_parti_o1 
-#    num_vY_o2 -=  num_o2v0_loss * a_sin( num_angle_diff_o2X) * num_mass_parti_o2 
-#    num_vX_o2 -=  num_o2v0_loss * a_cos( num_angle_diff_o2X) * num_mass_parti_o2 
-
-    return [ num_vX_o1, num_vY_o1, num_vX_o2, num_vY_o2] 
 
 def drag_force(num_v, num_rho=0.179, C_D=0.47, A = 1.0):
     # Drag force = F = 0.5 * rho * v**2 * C_D * A
@@ -769,9 +673,9 @@ def drag_force(num_v, num_rho=0.179, C_D=0.47, A = 1.0):
 def AI_detect_object(arr_Objects, num_Objects, num_detect_radius, object_self):
     arr_detect_Obj = []
     for obj_i in range(num_Objects):
-        num_dist, num_phi = num_C2P(object_self.arr_pos, arr_Objects[obj_i].arr_pos)	
-	if num_dist < num_detect_radius and arr_Objects[obj_i].str_ID != object_self.str_ID:
-            arr_detect_Obj.append([arr_Objects[obj_i].str_ID, num_dist, num_phi  ])
+        num_dist, num_phi = num_C2P(object_self.arr_pos, arr_Objects[obj_i].arr_pos)    
+    if num_dist < num_detect_radius and arr_Objects[obj_i].str_ID != object_self.str_ID:
+        arr_detect_Obj.append([arr_Objects[obj_i].str_ID, num_dist, num_phi  ])
     return arr_detect_Obj
 
 #def AI_avoid_crash(arr_detect_Obj, arr_detect_objs):
@@ -852,392 +756,416 @@ def main_game(screen_size, num_uni_scale=1.0, num_time_limit=0):
 # ------------------------------------------------------- # 
 #  put in the camera
 
-  pygame.font.init()
-  screen_size = (screen_size[0], screen_size[1])
-  screen = pygame.display.set_mode(screen_size)
-
-  if_run     = True
-  num_second = 0.0 
+    pygame.font.init()
+    screen_size = (screen_size[0], screen_size[1])
+    screen = pygame.display.set_mode(screen_size)
   
-  num_time_scale  = 1.0  # for tick = 120, 1 sec is for 1.0 as scale
-
-  camera = Camera(screen_size)
-
-  # -------------------------------------------- #
-  #               Object information             #
-  # -------------------------------------------- #
-
-  arr_mapsize  = [4000, 8000]
-  num_gridsize = 200
-  arr_num_grid = [arr_mapsize[0]/num_gridsize, arr_mapsize[1]/num_gridsize ]
-
-  arr_player_init = [screen_size[0]*0.5, screen_size[1]*0.2] 
-
-  player = MotionObject([screen_size[0]*0.5, screen_size[1]*0.2],0,300,200,200)
-  player.num_scale  = 2 * num_uni_scale
-  player.str_ID     = "PYR1"
-
-  arr_body_e1       = [[-2,3],[-1,7],[0,10],[1,7],[2,3]]
-  num_hit_range_e1  = 2.0
-  arr_hit_center_e1 = [0,6.5]
-  num_scale_e1      = 2 * num_uni_scale  
-  num_angle_e1     = 180
-
-  arr_body_e2       = [[0,12],[2,10],[3,9],[3,4],[2,3],[1,2],[0,0],[-1,2],[-2,3],[-3,4],[-3,9],[-2,10]]
-  num_hit_range_e2  = 3  
-  arr_hit_center_e2 = [0 ,6  ]
-  num_scale_e2      = 2 * num_uni_scale
-
-  print("load emeny")
-  E3_demo = MotionObject([200,200], 360 * random.random(), str_ID="E3_20")
-  E3_demo.arr_body       = arr_body_e2
-  E3_demo.arr_color      = (255,255,0)
-  E3_demo.num_scale      = num_uni_scale * 2.0
-  E3_demo.num_hit_range  = num_hit_range_e2
-  E3_demo.arr_hit_center = arr_hit_center_e2
-
-  test_msl = MotionObject(5,10, [200,200])
-  test_msl.arr_body = [[0,15],[1,13],[1,11],[2,10],[1,10],[1,4],[2,3],[2,2],[1,2],[1,0],[-1,0],[-1,2],[-2,2],[-2,3],[-1,4],[-1,10],[-2,10],[-1,11],[-1,13]] 
-  test_msl.num_scale = 2 
-
-  arr_laser_shape = [[0,3 ],[0, 0]]
-  arr_ion_shape = [[0,3 ],[0, 0]]
-
-#  coodination system
-  arr_coord_XY = list([[[] for l in range(arr_num_grid[0])] for k in range(arr_num_grid[1])])
-  for j in range(arr_num_grid[1]):
-    for i in range(arr_num_grid[0]):
-      arr_coord_XY[j][i] = [i*num_gridsize, j*num_gridsize] 
-
-#   On screen objs
-  arr_MotionObjects    = []
-  arr_UncontrolObjects = []
-  arr_EffectObjects    = []
- 
-  arr_ss1 = screen_size
-  arr_ss0 = screen_size
-
-# Put player as the first object:
-  #arr_MotionObjects.append(player)
-
-  # -------------------------------------------- #
-  #               Sound  information             #
-  # -------------------------------------------- #
-  pygame.mixer.init()
-  obj_s_blast = pygame.mixer.Sound("./aaj_0020_Lazer_Gun_01_SFX.ogg")
-  obj_s_explo = pygame.mixer.Sound("./audio_hero_ExplosionAtomic_DIGIVJ1_91_349_2.ogg")
-  pygame.joystick.quit()
-  pygame.joystick.init()
-  #print(pygame.joystick.Joystick)
-#pygame.joystick.Joystick(0).init()
-
-  while if_run:
-#   Pygame setup
-    clock = pygame.time.Clock()
-    event = pygame.event.get()
-    focused = pygame.key.get_focused()
-    time_tick = pygame.time.get_ticks()
-
-    for event in pygame.event.get(): # User did something.
-        if event.type == pygame.JOYBUTTONDOWN:
-            print("Joystick button pressed.")
-        elif event.type == pygame.JOYBUTTONUP:
-            print("Joystick button released.")
-	else:
-	    print(event, event.type)
-
-#    print("Joysticks: {0:d}".format(pygame.joystick.get_count()))
-#print(pygame.joystick.Joystick(1).get_button())
-#   On screen setup
-    pause = 100
-    screen.fill((0,0,0))
-    font = pygame.font.SysFont("monospace",18)
-
-#   On screen information
-    label1 = font.render("time: {0:1.1f}".format(num_second),True,(225,225,225))
-    screen.blit(label1,  [ 5,40])
-    label2 = font.render("X:{0:5.1f}, Y:{1:5.1f}, R:{2:5.2f}".format(player.arr_pos[0], player.arr_pos[1], player.num_angle[0]), True, (225,225,225))    
-    screen.blit(label2,  [ 5,60])
-    label3 = font.render("HP: {2:.0f}/{0:.0f} EP: {3:.0f}/{1:.0f}".format(player.MAX_HP, player.MAX_EP, player.HP, player.EP), True, (255,255,255))
-    screen.blit(label3,  [ 5,80])
+    if_run     = True
+    num_second = 0.0 
     
-#   Control
-    if focused:
-      pressed = pygame.key.get_pressed()
-      
-    if pressed[pygame.K_UP  ] :
-#      player.POS_Y  +=  -5.0
-      player.power_system(True, False, True )
-    if pressed[pygame.K_DOWN] :
-#      player.POS_Y  +=  +5.0
-      player.power_system(False, True, True )
-    if pressed[pygame.K_UP] == False and pressed[pygame.K_DOWN]== False :
-      player.power_system(False, False, False)
-
-    if pressed[pygame.K_RIGHT]:
-      player.tilt_system(True ,False, True)
-    if pressed[pygame.K_LEFT] :
-      player.tilt_system(False,True , True)
-    if pressed[pygame.K_LEFT] == False and pressed[pygame.K_RIGHT]== False :
-      player.tilt_system(False, False, False)
-    else:
-      player.if_tilt = True 
-    if pressed[pygame.K_e]:
-      player.turn_system(True , False)
-    if pressed[pygame.K_q]:
-      player.turn_system(False, True )
-    if pressed[pygame.K_e] == False and pressed[pygame.K_q] == False:
-      player.turn_system(False, False)
-
-#   Mouse Information
-    arr_MPos   = pygame.mouse.get_pos()
-    arr_MPress = pygame.mouse.get_pressed()
-    if arr_MPress[0] == 1:
-        print(arr_MPress, arr_MPos)
-
-    player.self_physics()
-    # Control: firing system
-    # Firing weapon
-    if pressed[pygame.K_v]:
-      player.fire_weapon(num_game_time=time_tick, if_fire=True)
-      if player.param_weapon["if_fire"][0]:
-        obj_s_blast.play()
-        for n in range(len(player.arr_gun_point)):
-          arr_UncontrolObjects.append(UncontrolObject(player.arr_fire_point[n], player.num_angle[0], player.param_weapon["speed"][0], player.param_weapon["lasttime"][0], player.param_weapon["arr_color"][0], player.param_weapon["arr_shape"][0] , arr_dmg=[player.param_weapon["num_HP_damage"][0], player.param_weapon["num_SH_damage"][0],player.param_weapon["num_EP_damage"][0]]))
-    else:
-      player.fire_weapon(if_fire=False)
-    # Firing Canon
-    if pressed[pygame.K_c]:
-      player.fire_weapon(num_game_time=time_tick, if_fire=True)
-      if player.param_weapon["if_fire"][1]:
-        obj_s_blast.play()
-        for n in range(len(player.arr_gun_point)):
-          arr_UncontrolObjects.append(UncontrolObject(player.arr_fire_point[n], player.num_angle[0], player.param_weapon["speed"][1], player.param_weapon["lasttime"][1], player.param_weapon["arr_color"][1], player.param_weapon["arr_shape"][1] , arr_dmg=[player.param_weapon["num_HP_damage"][1], player.param_weapon["num_SH_damage"][1],player.param_weapon["num_EP_damage"][1]]))
-    else:
-      player.fire_weapon(if_fire=False)
-
-    # Firing Missile
-    if pressed[pygame.K_x]:
-      player.fire_weapon(num_game_time=time_tick, if_fire=True)
-      if player.param_weapon["if_fire"][2]:
-        num_gunpoint = 0
-        arr_UncontrolObjects.append(UncontrolObject(player.arr_fire_point[num_gunpoint], player.num_angle[0], player.param_weapon["speed"][2], player.param_weapon["lasttime"][2], player.param_weapon["arr_color"][2], player.param_weapon["arr_shape"][2] , arr_dmg=[player.param_weapon["num_HP_damage"][2], player.param_weapon["num_SH_damage"][2],player.param_weapon["num_EP_damage"][2]]))
-
-    if pressed[pygame.K_z]:
-      player.locking_system()
-    # Cooling down
-    sys_cd_time(time_tick, "laser" , player.param_weapon)
-    sys_cd_time(time_tick, "ion"   , player.param_weapon)
-    sys_cd_time(time_tick, "aa-msl", player.param_weapon)
-
-    if pressed[pygame.K_r]:
-      player.add_missile([10,10],"anti-fighter")
-
-    # Setting for camera (following object): 
-    arr_camera_para = camera.follow_object(arr_player_init, player.arr_pos, player.num_angle[0])
-
-    # Control: moving player back to original point
-
-    if pressed[pygame.K_o]:
-      player.arr_pos[0] = arr_player_init[0]
-      player.arr_pos[1] = arr_player_init[1]
-
-    if pressed[pygame.K_ESCAPE] :
-      game_quit()
-      break
-
-# ------------------------------------- #
-#              Load Enemies             #
-# ------------------------------------- #
-
-    for time_t in range(0,1000, 50 ):
-      if time_tick/10 == time_t:
+    num_time_scale  = 1.0  # for tick = 120, 1 sec is for 1.0 as scale
+  
+    camera = Camera(screen_size)
+  
+    # -------------------------------------------- #
+    #               Object information             #
+    # -------------------------------------------- #
+  
+    arr_mapsize  = [4000, 8000]
+    num_gridsize = 200
+    arr_num_grid = [arr_mapsize[0]/num_gridsize, arr_mapsize[1]/num_gridsize ]
+  
+    arr_player_init = [screen_size[0]*0.5, screen_size[1]*0.2] 
+  
+    player = MotionObject([screen_size[0]*0.5, screen_size[1]*0.2],0,300,200,200)
+    player.num_scale  = 2 * num_uni_scale
+    player.str_ID     = "PYR1"
+  
+    arr_body_e1       = [[-2,3],[-1,7],[0,10],[1,7],[2,3]]
+    num_hit_range_e1  = 2.0
+    arr_hit_center_e1 = [0,6.5]
+    num_scale_e1      = 2 * num_uni_scale  
+    num_angle_e1     = 180
+  
+    arr_body_e2       = [[0,12],[2,10],[3,9],[3,4],[2,3],[1,2],[0,0],[-1,2],[-2,3],[-3,4],[-3,9],[-2,10]]
+    num_hit_range_e2  = 3  
+    arr_hit_center_e2 = [0 ,6  ]
+    num_scale_e2      = 2 * num_uni_scale
+  
+    print("load emeny")
+    E3_demo = MotionObject([200,200], 360 * random.random(), str_ID="E3_20")
+    E3_demo.arr_body       = arr_body_e2
+    E3_demo.arr_color      = (255,255,0)
+    E3_demo.num_scale      = num_uni_scale * 2.0
+    E3_demo.num_hit_range  = num_hit_range_e2
+    E3_demo.arr_hit_center = arr_hit_center_e2
+  
+    test_msl = MotionObject(5,10, [200,200])
+    test_msl.arr_body = [[0,15],[1,13],[1,11],[2,10],[1,10],[1,4],[2,3],[2,2],[1,2],[1,0],[-1,0],[-1,2],[-2,2],[-2,3],[-1,4],[-1,10],[-2,10],[-1,11],[-1,13]] 
+    test_msl.num_scale = 2 
+  
+    arr_laser_shape = [[0,3 ],[0, 0]]
+    arr_ion_shape = [[0,3 ],[0, 0]]
+  
+  #  coodination system
+  #  arr_coord_XY = list([[[] for l in range(arr_num_grid[0])] for k in range(arr_num_grid[1])])
+  #  for j in range(arr_num_grid[1]):
+  #    for i in range(arr_num_grid[0]):
+  #      arr_coord_XY[j][i] = [i*num_gridsize, j*num_gridsize] 
+  
+  #   On screen objs
+    arr_MotionObjects    = []
+    arr_UncontrolObjects = []
+    arr_EffectObjects    = []
+   
+    arr_ss1 = screen_size
+    arr_ss0 = screen_size
+  
+  # Put player as the first object:
+    #arr_MotionObjects.append(player)
+  
+    # -------------------------------------------- #
+    #               Sound  information             #
+    # -------------------------------------------- #
+    pygame.mixer.init()
+    obj_s_blast = pygame.mixer.Sound("./aaj_0020_Lazer_Gun_01_SFX.ogg")
+    obj_s_explo = pygame.mixer.Sound("./audio_hero_ExplosionAtomic_DIGIVJ1_91_349_2.ogg")
+    #pygame.joystick.quit()
+    #pygame.joystick.init()
+    #print(pygame.joystick.Joystick)
+    #pygame.joystick.Joystick(0).init()
+    for time_t in range(0,10 ):
         RAN_X = random.randint(10,arr_ss1[0]) 
         RAN_Y = random.randint(10,arr_ss1[1]) 
         # arr format : [position_x, position_y], deg. of rotation, num_Enemy_HP, arr of body, ID, enemy_hit_center, hit range
-        arr_MotionObjects.append(MotionObject([RAN_X, RAN_Y], num_angle_e1, str_ID="E1_{0:d}".format(time_tick), num_hp=100, num_ep=200, num_sh=200))
+        arr_MotionObjects.append(MotionObject([RAN_X, RAN_Y], num_angle_e1, str_ID="E1_{0:d}".format(random.randint(0,1000)), num_hp=100, num_ep=200, num_sh=200))
         arr_MotionObjects[-1].arr_body =  arr_body_e1 
         arr_MotionObjects[-1].num_hit_range  = num_hit_range_e1
         arr_MotionObjects[-1].arr_hit_center = arr_hit_center_e1
         arr_MotionObjects[-1].num_scale      = num_scale_e1
-
-
-        #print(arr_enemy[-1][6])
-
-    for time_t in range(0,20000,200):
-      if time_tick/10 == time_t:
         RAN_X = random.randint(10,arr_ss1[0]) 
         RAN_Y = random.randint(10,arr_ss1[1]) 
 
-        arr_MotionObjects.append(MotionObject([RAN_X, RAN_Y], 360 * random.random(), str_ID="E2_{0:d}".format(time_tick)))
+        arr_MotionObjects.append(MotionObject([RAN_X, RAN_Y], 360 * random.random(), str_ID="E2_{0:d}".format(random.randint(1000,2000))))
         arr_MotionObjects[-1].arr_body =  arr_body_e2 
         arr_MotionObjects[-1].num_hit_range  = num_hit_range_e2
         arr_MotionObjects[-1].arr_hit_center = arr_hit_center_e2
         arr_MotionObjects[-1].num_scale      = num_scale_e2
-
-
-    E3_demo.arr_velocity[1] = 1.0
-    E3_demo.num_angle[0] += 2.0
-    E3_demo.self_physics()
-
-
     
-# ---------------------------------- #
-# Draw all the things                #
-# ---------------------------------- #
+  
+    while if_run:
+    #   Pygame setup
+        clock = pygame.time.Clock()
+        event = pygame.event.get()
+        focused = pygame.key.get_focused()
+        time_tick = pygame.time.get_ticks()
+    
+        #for event in pygame.event.get(): # User did something.
+        #    if event.type == pygame.JOYBUTTONDOWN:
+        #        print("Joystick button pressed.")
+        #    elif event.type == pygame.JOYBUTTONUP:
+        #        print("Joystick button released.")
+        #else:
+        #    print(event, event.type)
+    
+        #  print("Joysticks: {0:d}".format(pygame.joystick.get_count()))
+        #print(pygame.joystick.Joystick(1).get_button())
+        #  On screen setup
+        pause = 100
+        screen.fill((0,0,0))
+        font = pygame.font.SysFont("monospace",18)
+    
+    #   On screen information
+        label1 = font.render("time: {0:1.1f}".format(num_second),True,(225,225,225))
+        screen.blit(label1,  [ 5,40])
+        label2 = font.render("X:{0:5.1f}, Y:{1:5.1f}, R:{2:5.2f}".format(player.arr_pos[0], player.arr_pos[1], player.num_angle[0]), True, (225,225,225))    
+        screen.blit(label2,  [ 5,60])
+        label3 = font.render("HP: {2:.0f}/{0:.0f} EP: {3:.0f}/{1:.0f}".format(player.MAX_HP, player.MAX_EP, player.HP, player.EP), True, (255,255,255))
+        screen.blit(label3,  [ 5,80])
+        
+    #   Control
+        if focused:
+          pressed = pygame.key.get_pressed()
+          
+        if pressed[pygame.K_UP  ] :
+          player.power_system(True, False, True )
+        if pressed[pygame.K_DOWN] :
+          player.power_system(False, True, True )
+        if pressed[pygame.K_UP] == False and pressed[pygame.K_DOWN]== False :
+          player.power_system(False, False, False)
+    
+        if pressed[pygame.K_RIGHT]:
+          player.tilt_system(True ,False, True)
+        if pressed[pygame.K_LEFT] :
+          player.tilt_system(False,True , True)
+        if pressed[pygame.K_LEFT] == False and pressed[pygame.K_RIGHT]== False :
+          player.tilt_system(False, False, False)
+        else:
+          player.if_tilt = True 
+        if pressed[pygame.K_e]:
+          player.turn_system(True , False)
+        if pressed[pygame.K_q]:
+          player.turn_system(False, True )
+        if pressed[pygame.K_e] == False and pressed[pygame.K_q] == False:
+          player.turn_system(False, False)
+    
+    #   Mouse Information
+        arr_MPos   = pygame.mouse.get_pos()
+        arr_MPress = pygame.mouse.get_pressed()
+        if arr_MPress[0] == 1:
+            print(arr_MPress, arr_MPos)
+    
+        player.self_physics()
+        # Control: firing system
+        # Firing weapon
+        if pressed[pygame.K_v]:
+          player.fire_weapon(num_game_time=time_tick, if_fire=True)
+          if player.param_weapon["if_fire"][0]:
+            obj_s_blast.play()
+            for n in range(len(player.arr_gun_point)):
+              arr_UncontrolObjects.append(UncontrolObject(player.arr_fire_point[n], player.num_angle[0], player.param_weapon["speed"][0], player.param_weapon["lasttime"][0], player.param_weapon["arr_color"][0], player.param_weapon["arr_shape"][0] , arr_dmg=[player.param_weapon["num_HP_damage"][0], player.param_weapon["num_SH_damage"][0],player.param_weapon["num_EP_damage"][0]]))
+        else:
+          player.fire_weapon(if_fire=False)
+        # Firing Canon
+        if pressed[pygame.K_c]:
+          player.fire_weapon(num_game_time=time_tick, if_fire=True)
+          if player.param_weapon["if_fire"][1]:
+            obj_s_blast.play()
+            for n in range(len(player.arr_gun_point)):
+              arr_UncontrolObjects.append(UncontrolObject(player.arr_fire_point[n], player.num_angle[0], player.param_weapon["speed"][1], player.param_weapon["lasttime"][1], player.param_weapon["arr_color"][1], player.param_weapon["arr_shape"][1] , arr_dmg=[player.param_weapon["num_HP_damage"][1], player.param_weapon["num_SH_damage"][1],player.param_weapon["num_EP_damage"][1]]))
+        else:
+          player.fire_weapon(if_fire=False)
+    
+        # Firing Missile
+        if pressed[pygame.K_x]:
+          player.fire_weapon(num_game_time=time_tick, if_fire=True)
+          if player.param_weapon["if_fire"][2]:
+            num_gunpoint = 0
+            arr_UncontrolObjects.append(UncontrolObject(player.arr_fire_point[num_gunpoint], player.num_angle[0], player.param_weapon["speed"][2], player.param_weapon["lasttime"][2], player.param_weapon["arr_color"][2], player.param_weapon["arr_shape"][2] , arr_dmg=[player.param_weapon["num_HP_damage"][2], player.param_weapon["num_SH_damage"][2],player.param_weapon["num_EP_damage"][2]]))
+    
+        if pressed[pygame.K_z]:
+          player.locking_system()
+        # Cooling down
+        sys_cd_time(time_tick, "laser" , player.param_weapon)
+        sys_cd_time(time_tick, "ion"   , player.param_weapon)
+        sys_cd_time(time_tick, "aa-msl", player.param_weapon)
+    
+        if pressed[pygame.K_r]:
+          player.add_missile([10,10],"anti-fighter")
+    
+        # Setting for camera (following object): 
+        arr_camera_para = camera.follow_object(arr_player_init, player.arr_pos, player.num_angle[0])
+    
+        # Control: moving player back to original point
+    
+        if pressed[pygame.K_o]:
+          player.arr_pos[0] = arr_player_init[0]
+          player.arr_pos[1] = arr_player_init[1]
+    
+        if pressed[pygame.K_ESCAPE] :
+          game_quit()
+          break
+   
 
-    arr_smlrtc = [[1,-1],[1,1],[-1,1],[-1,-1]]
-
-#   Draw Player:
-    pygame.draw.lines(screen, player.arr_color, True, pos_os(coord_object_full  (player.arr_body , player.arr_pos, num_tilt=player.num_tilt, num_angle=player.num_angle[0], num_scale= player.num_scale, arr_center=player.arr_hit_center),arr_camera_para ))
-
-#   Draw Enemy E3:
-    pygame.draw.lines(screen, E3_demo.arr_color, True, pos_os(coord_object_full  (E3_demo.arr_body , E3_demo.arr_pos, num_tilt=E3_demo.num_tilt, num_angle=E3_demo.num_angle[0], num_scale= E3_demo.num_scale, arr_center=E3_demo.arr_hit_center),arr_camera_para ))
+    # ------------------------------------- #
+    #            Starting                   #
+    # ------------------------------------- #
 
 
-    # --------------------------------------- #
-    #   Check MotionObjects                   #
-    # --------------------------------------- #
-    num_detect=0 
-    num_MotObj = len(arr_MotionObjects)
-    num_UncObj = len(arr_UncontrolObjects)
-    num_EffObj = len(arr_EffectObjects)
-    for num_mo in range(num_MotObj):
-#   Draw things in arr_MotionObjects
-        arr_MotionObjects[num_mo].self_physics()
-        #arr_MotionObjects[num_mo].power_system(True , False, True )
-        pygame.draw.lines(screen, arr_MotionObjects[num_mo].arr_color, True, pos_os(coord_object_full  (arr_MotionObjects[num_mo].arr_body , arr_MotionObjects[num_mo].arr_pos, num_tilt=arr_MotionObjects[num_mo].num_tilt, num_angle=arr_MotionObjects[num_mo].num_angle[0], num_scale= arr_MotionObjects[num_mo].num_scale, arr_center=arr_MotionObjects[num_mo].arr_hit_center), arr_camera_para ))  
+
+
+
+    # ------------------------------------- #
+    #              Load Enemies             #
+    # ------------------------------------- #
+    
+    
+        E3_demo.arr_velocity[1] = 1.0
+        E3_demo.num_angle[0] += 2.0
+        E3_demo.self_physics()
+    
+    
+        
+    # ---------------------------------- #
+    # Draw all the things                #
+    # ---------------------------------- #
+        arr_smlrtc = [[1,-1],[1,1],[-1,1],[-1,-1]]
+    
+    #   Draw Player:
+        draw_obj(player, screen, True, 1, arr_camera_para) 
+    
         # --------------------------------------- #
-        #   Detect Objects                        #
+        #   Check MotionObjects                   #
         # --------------------------------------- #
-        arr_detect_MotObj =  AI_detect_object(arr_MotionObjects, num_MotObj, arr_MotionObjects[num_mo].param_ai["Detect_Radius"], arr_MotionObjects[num_mo])
-        if len(arr_detect_MotObj) >0:
-	    num_detect += 1
-	    num_ran1 = random.random()
-	    num_ran2 = random.random()
-	    num_ran3 = random.random()
+        num_detect=0 
+        num_MotObj = len(arr_MotionObjects)
+        num_UncObj = len(arr_UncontrolObjects)
+        num_EffObj = len(arr_EffectObjects)
+        print(num_MotObj, num_UncObj, num_EffObj)  
+        for obj in arr_MotionObjects:
+            num_ran1 = random.random()
+            num_ran2 = random.random()
+            num_ran3 = random.random()
+            draw_obj(arr_MotionObjects[num_mo], screen, True, 1, arr_camera_para) 
+
+            # --------------------------------------- #
+            #   Detect Objects                        #
+            # --------------------------------------- #
+
+            arr_detect_MotObj =  AI_detect_object(arr_MotionObjects, num_MotObj, arr_MotionObjects[num_mo].param_ai["Detect_Radius"], arr_MotionObjects[num_mo])
+            arr_MotionObjects[num_mo].self_physics()
+
             if num_ran1 > 0.5:
                 arr_MotionObjects[num_mo].fire_weapon(if_fire=True)
                 arr_MotionObjects[num_mo].tilt_system(False,  True, True )
             else:
-                arr_MotionObjects[num_mo].tilt_system(True , False, True )
+                arr_MotionObjects[num_mo].tilt_system(False, False, False)
+                arr_MotionObjects[num_mo].power_system(False, False, False)
+
             if num_ran2 > 0.5:
-                arr_MotionObjects[num_mo].power_system(False,  True, True )
-            else:
                 arr_MotionObjects[num_mo].power_system(True , False, True )
-            if num_ran3 > 0.5:
-                arr_MotionObjects[num_mo].turn_system(True, False)
             else:
-                arr_MotionObjects[num_mo].turn_system(False, True)
+                arr_MotionObjects[num_mo].power_system(False, False, False)
+
             if num_ran3 > 0.9:
                 arr_MotionObjects[num_mo].fire_weapon(num_game_time=time_tick, if_fire=True)
                 if arr_MotionObjects[num_mo].param_weapon["if_fire"][0]:
                 #obj_s_blast.play()
                     for n in range(len(arr_MotionObjects[num_mo].arr_gun_point)):
                         arr_UncontrolObjects.append(UncontrolObject(arr_MotionObjects[num_mo].arr_fire_point[n], arr_MotionObjects[num_mo].num_angle[0]     , arr_MotionObjects[num_mo].param_weapon["speed"][0], arr_MotionObjects[num_mo].param_weapon["lasttime"][0], arr_MotionObjects[num_mo].param_weapon["arr_color"][0], arr_MotionObjects[num_mo].param_weapon["arr_shape"][0] , arr_dmg=[arr_MotionObjects[num_mo].param_weapon["num_HP_damage"][0], arr_MotionObjects[num_mo].param_weapon["num_SH_damage"][0],arr_MotionObjects[num_mo].param_weapon["num_EP_damage"][0]]))
-                else:
-                    arr_MotionObjects[num_mo].fire_weapon(num_game_time=time_tick, if_fire=False)
+            else:
+                arr_MotionObjects[num_mo].turn_system(False, True ) 
 
- 	    
-        else:
-            arr_MotionObjects[num_mo].tilt_system(False, False, False)
-            arr_MotionObjects[num_mo].power_system(False, False, False)
-            arr_MotionObjects[num_mo].turn_system(False, False)
-
-        # --------------------------------------- #
-        #   Check crash with player:              #
-        # --------------------------------------- #
-        if_hit = check_hit(shiftpos(arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].arr_hit_center), shiftpos(player.arr_pos, player.arr_hit_center), arr_MotionObjects[num_mo].num_hit_range, player.num_hit_range, arr_MotionObjects[num_mo].num_scale, player.num_scale  )
-
-        if if_hit:
-            [num_add_vel_o1_x1, num_add_vel_o1_y1 ,\
-             num_add_vel_o2_x1, num_add_vel_o2_y1] = collision_vel(player.arr_velocity, player.arr_pos, player.num_mass, player.num_angle, arr_MotionObjects[num_mo].arr_velocity, arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].num_mass, arr_MotionObjects[num_mo].num_angle)
-            [num_add_vel_o2_x2, num_add_vel_o2_y2 ,\
-             num_add_vel_o1_x2, num_add_vel_o1_y2] = collision_vel( arr_MotionObjects[num_mo].arr_velocity, arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].num_mass, arr_MotionObjects[num_mo].num_angle, player.arr_velocity, player.arr_pos, player.num_mass, player.num_angle)
-            player.arr_velocity[0] += num_add_vel_o1_x1 + num_add_vel_o1_x2
-            player.arr_velocity[1] += num_add_vel_o1_y1 + num_add_vel_o1_y2
-            arr_MotionObjects[num_mo].arr_velocity[0] += num_add_vel_o2_x1 + num_add_vel_o2_x2
-            arr_MotionObjects[num_mo].arr_velocity[1] += num_add_vel_o2_y1 + num_add_vel_o2_y2
-
-        # --------------------------------------- #
-        #   Check crash with other Objects:       #
-        # --------------------------------------- #
-
-        for num_mo2 in range(num_MotObj):
-            if num_mo != num_mo2:
-                if_hit_oo = check_hit(shiftpos(arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].arr_hit_center), shiftpos(arr_MotionObjects[num_mo2].arr_pos, arr_MotionObjects[num_mo2].arr_hit_center), arr_MotionObjects[num_mo].num_hit_range, arr_MotionObjects[num_mo2].num_hit_range, arr_MotionObjects[num_mo].num_scale, arr_MotionObjects[num_mo2].num_scale  )
-                if if_hit_oo:
-                    [num_add_vel_o1_x1, num_add_vel_o1_y1 ,\
-                     num_add_vel_o2_x1, num_add_vel_o2_y1] = collision_vel(arr_MotionObjects[num_mo].arr_velocity, arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].num_mass, arr_MotionObjects[num_mo].num_angle, arr_MotionObjects[num_mo2].arr_velocity, arr_MotionObjects[num_mo2].arr_pos, arr_MotionObjects[num_mo2].num_mass, arr_MotionObjects[num_mo2].num_angle)
-                    [num_add_vel_o2_x2, num_add_vel_o2_y2 ,\
-                     num_add_vel_o1_x2, num_add_vel_o1_y2] = collision_vel(arr_MotionObjects[num_mo2].arr_velocity, arr_MotionObjects[num_mo2].arr_pos, arr_MotionObjects[num_mo2].num_mass, arr_MotionObjects[num_mo2].num_angle, arr_MotionObjects[num_mo].arr_velocity, arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].num_mass, arr_MotionObjects[num_mo].num_angle)
-                    arr_MotionObjects[num_mo].arr_velocity[0] += num_add_vel_o1_x1 + num_add_vel_o1_x2
-                    arr_MotionObjects[num_mo].arr_velocity[1] += num_add_vel_o1_y1 + num_add_vel_o1_y2
-                    arr_MotionObjects[num_mo2].arr_velocity[0] += num_add_vel_o2_x1 + num_add_vel_o2_x2
-                    arr_MotionObjects[num_mo2].arr_velocity[1] += num_add_vel_o2_y1 + num_add_vel_o2_y2
-#   Draw UncontrolObjects:
-    for num_uo in range(num_UncObj):
-      arr_UncontrolObjects[num_uo].cal_time()
-      arr_UncontrolObjects[num_uo].cal_position()
-      pygame.draw.lines(screen, arr_UncontrolObjects[num_uo].arr_color, True, pos_os(coord_object_full  (arr_UncontrolObjects[num_uo].arr_shape, arr_UncontrolObjects[num_uo].arr_pos, num_angle=arr_UncontrolObjects[num_uo].num_angle, num_scale= player.num_scale, arr_center=[0,0]), arr_camera_para)) 
-# --------------------------------------- #
-#           Object Check hit              #
-# --------------------------------------- #
-
-      for num_mo in range(num_MotObj):
-        if_hit = check_hit(shiftpos(arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].arr_hit_center), arr_UncontrolObjects[num_uo].arr_pos, arr_MotionObjects[num_mo].num_hit_range, 1.0, arr_MotionObjects[num_mo].num_scale, player.num_scale  )
-
-        if if_hit:
-          # Object update information
-          arr_MotionObjects[num_mo] = check_weapon_hit(arr_MotionObjects[num_mo],arr_UncontrolObjects[num_uo])    
-#          print(num_mo, arr_MotionObjects[num_mo].HP, arr_MotionObjects[num_mo].SH, arr_MotionObjects[num_mo].EP)
-          arr_UncontrolObjects[num_uo].if_exist = False
-          # Adding effects
-          
-          arr_EffectObjects.append([arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].arr_shield_center, arr_MotionObjects[num_mo].num_shield_range, 30, 30, True])
-
-#   Draw Effect
-    for num_eo in range(num_EffObj):
-      arr_pos_eo = pos_os( coord_object_full([[0,0]], arr_EffectObjects[num_eo][0]), arr_camera_para) 
-      num_left_time, if_exist = shield_hit([int(arr_pos_eo[0][0]), int(arr_pos_eo[0][1])  ], arr_EffectObjects[num_eo][2], player.num_scale, (  0,  0,  0), (255,255,255), arr_EffectObjects[num_eo][3], arr_EffectObjects[num_eo][4], screen) 
-      arr_EffectObjects[num_eo][3] = num_left_time
-      arr_EffectObjects[num_eo][5] = if_exist
+#                if num_ran1 > 0.5:
+#                    arr_MotionObjects[num_mo].fire_weapon(if_fire=True)
+#                    arr_MotionObjects[num_mo].tilt_system(False,  True, True )
+#                    print("AI FIre")
+#            if len(arr_detect_MotObj) >0:
+#                num_detect += 1
+#                num_ran1 = random.random()
+#                num_ran2 = random.random()
+#                num_ran3 = random.random()
+#                if num_ran1 > 0.5:
+#                    arr_MotionObjects[num_mo].fire_weapon(if_fire=True)
+#                    arr_MotionObjects[num_mo].tilt_system(False,  True, True )
+#                    print("AI FIre")
+#                else:
+#                    arr_MotionObjects[num_mo].tilt_system(True , False, True )
+#                if num_ran2 > 0.5:
+#                    arr_MotionObjects[num_mo].power_system(False,  True, True )
+#                else:
+#                    arr_MotionObjects[num_mo].power_system(True , False, True )
+#                if num_ran3 > 0.5:
+#                    arr_MotionObjects[num_mo].turn_system(True, False)
+#                else:
+#                    arr_MotionObjects[num_mo].turn_system(False, True)
+#                if num_ran3 > 0.9:
+#                    arr_MotionObjects[num_mo].fire_weapon(num_game_time=time_tick, if_fire=True)
+#                    if arr_MotionObjects[num_mo].param_weapon["if_fire"][0]:
+#                    #obj_s_blast.play()
+#                        for n in range(len(arr_MotionObjects[num_mo].arr_gun_point)):
+#                            arr_UncontrolObjects.append(UncontrolObject(arr_MotionObjects[num_mo].arr_fire_point[n], arr_MotionObjects[num_mo].num_angle[0]     , arr_MotionObjects[num_mo].param_weapon["speed"][0], arr_MotionObjects[num_mo].param_weapon["lasttime"][0], arr_MotionObjects[num_mo].param_weapon["arr_color"][0], arr_MotionObjects[num_mo].param_weapon["arr_shape"][0] , arr_dmg=[arr_MotionObjects[num_mo].param_weapon["num_HP_damage"][0], arr_MotionObjects[num_mo].param_weapon["num_SH_damage"][0],arr_MotionObjects[num_mo].param_weapon["num_EP_damage"][0]]))
+#                    else:
+#                        arr_MotionObjects[num_mo].fire_weapon(num_game_time=time_tick, if_fire=False)
     
-    print(num_EffObj, num_MotObj, num_UncObj)
-
-#print("number of detecting objects: {0:d}".format(num_detect))
-          
-# --------------------------------------- #
-#           Checking Arrays               #
-# --------------------------------------- #
-
-    # Pop out if object is not existing anymore (if_exist = False)
-    for num_mo in range(num_MotObj-1, -1, -1):
-      if arr_MotionObjects[num_mo].if_exist == False:
-        obj_s_explo.play()
-        arr_MotionObjects.pop(num_mo)
-
-    for num_uo in range(num_UncObj-1, -1, -1):
-      if arr_UncontrolObjects[num_uo].if_exist == False:
-        arr_UncontrolObjects.pop(num_uo)
-
-    for num_eo in range(num_EffObj-1, -1, -1):
-      if arr_EffectObjects[num_eo][5] == False:
-        arr_EffectObjects.pop(num_eo)
-
-    #   Processing game information
-    num_second  = num_time_scale * time_tick / 1000   # to 0.1 second
-    clock.tick(120/ num_time_scale)
-    pygame.display.flip()
-
-    if num_time_limit != 0:
-        if num_time_scale * time_tick / 1000 >= num_time_limit:
-            game_quit()
+             
+            #else:
+            #    arr_MotionObjects[num_mo].tilt_system(False, False, False)
+            #    arr_MotionObjects[num_mo].power_system(False, False, False)
+            #    arr_MotionObjects[num_mo].turn_system(False, False)
+    
+            # --------------------------------------- #
+            #   Check crash with player:              #
+            # --------------------------------------- #
+            if_hit = check_hit(shiftpos(arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].arr_hit_center), shiftpos(player.arr_pos, player.arr_hit_center), arr_MotionObjects[num_mo].num_hit_range, player.num_hit_range, arr_MotionObjects[num_mo].num_scale, player.num_scale  )
+    
+            if if_hit:
+                [num_add_vel_o1_x1, num_add_vel_o1_y1 ,\
+                 num_add_vel_o2_x1, num_add_vel_o2_y1] = collision_vel(player.arr_velocity, player.arr_pos, player.num_mass, player.num_angle, arr_MotionObjects[num_mo].arr_velocity, arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].num_mass, arr_MotionObjects[num_mo].num_angle)
+                [num_add_vel_o2_x2, num_add_vel_o2_y2 ,\
+                 num_add_vel_o1_x2, num_add_vel_o1_y2] = collision_vel( arr_MotionObjects[num_mo].arr_velocity, arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].num_mass, arr_MotionObjects[num_mo].num_angle, player.arr_velocity, player.arr_pos, player.num_mass, player.num_angle)
+                player.arr_velocity[0] += num_add_vel_o1_x1 + num_add_vel_o1_x2
+                player.arr_velocity[1] += num_add_vel_o1_y1 + num_add_vel_o1_y2
+                arr_MotionObjects[num_mo].arr_velocity[0] += num_add_vel_o2_x1 + num_add_vel_o2_x2
+                arr_MotionObjects[num_mo].arr_velocity[1] += num_add_vel_o2_y1 + num_add_vel_o2_y2
+    
+            # --------------------------------------- #
+            #   Check crash with other Objects:       #
+            # --------------------------------------- #
+    
+            for num_mo2 in range(num_MotObj):
+                if num_mo != num_mo2:
+                    if_hit_oo = check_hit(shiftpos(arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].arr_hit_center), shiftpos(arr_MotionObjects[num_mo2].arr_pos, arr_MotionObjects[num_mo2].arr_hit_center), arr_MotionObjects[num_mo].num_hit_range, arr_MotionObjects[num_mo2].num_hit_range, arr_MotionObjects[num_mo].num_scale, arr_MotionObjects[num_mo2].num_scale  )
+                    if if_hit_oo:
+                        [num_add_vel_o1_x1, num_add_vel_o1_y1 ,\
+                         num_add_vel_o2_x1, num_add_vel_o2_y1] = collision_vel(arr_MotionObjects[num_mo].arr_velocity, arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].num_mass, arr_MotionObjects[num_mo].num_angle, arr_MotionObjects[num_mo2].arr_velocity, arr_MotionObjects[num_mo2].arr_pos, arr_MotionObjects[num_mo2].num_mass, arr_MotionObjects[num_mo2].num_angle)
+                        [num_add_vel_o2_x2, num_add_vel_o2_y2 ,\
+                         num_add_vel_o1_x2, num_add_vel_o1_y2] = collision_vel(arr_MotionObjects[num_mo2].arr_velocity, arr_MotionObjects[num_mo2].arr_pos, arr_MotionObjects[num_mo2].num_mass, arr_MotionObjects[num_mo2].num_angle, arr_MotionObjects[num_mo].arr_velocity, arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].num_mass, arr_MotionObjects[num_mo].num_angle)
+                        arr_MotionObjects[num_mo].arr_velocity[0] += num_add_vel_o1_x1 + num_add_vel_o1_x2
+                        arr_MotionObjects[num_mo].arr_velocity[1] += num_add_vel_o1_y1 + num_add_vel_o1_y2
+                        arr_MotionObjects[num_mo2].arr_velocity[0] += num_add_vel_o2_x1 + num_add_vel_o2_x2
+                        arr_MotionObjects[num_mo2].arr_velocity[1] += num_add_vel_o2_y1 + num_add_vel_o2_y2
+    #   Draw UncontrolObjects:
+        for num_uo in range(num_UncObj):
+          arr_UncontrolObjects[num_uo].cal_time()
+          arr_UncontrolObjects[num_uo].cal_position()
+          pygame.draw.lines(screen, arr_UncontrolObjects[num_uo].arr_color, True, pos_os(coord_object_full  (arr_UncontrolObjects[num_uo].arr_shape, arr_UncontrolObjects[num_uo].arr_pos, num_angle=arr_UncontrolObjects[num_uo].num_angle, num_scale= player.num_scale, arr_center=[0,0]), arr_camera_para)) 
+    # --------------------------------------- #
+    #           Object Check hit              #
+    # --------------------------------------- #
+    
+          for num_mo in range(num_MotObj):
+            if_hit = check_hit(shiftpos(arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].arr_hit_center), arr_UncontrolObjects[num_uo].arr_pos, arr_MotionObjects[num_mo].num_hit_range, 1.0, arr_MotionObjects[num_mo].num_scale, player.num_scale  )
+    
+            if if_hit:
+              # Object update information
+              arr_MotionObjects[num_mo] = check_weapon_hit(arr_MotionObjects[num_mo],arr_UncontrolObjects[num_uo])    
+    #          print(num_mo, arr_MotionObjects[num_mo].HP, arr_MotionObjects[num_mo].SH, arr_MotionObjects[num_mo].EP)
+              arr_UncontrolObjects[num_uo].if_exist = False
+              # Adding effects
+              
+              arr_EffectObjects.append([arr_MotionObjects[num_mo].arr_pos, arr_MotionObjects[num_mo].arr_shield_center, arr_MotionObjects[num_mo].num_shield_range, 30, 30, True])
+    
+    #   Draw Effect
+        for num_eo in range(num_EffObj):
+          arr_pos_eo = pos_os( coord_object_full([[0,0]], arr_EffectObjects[num_eo][0]), arr_camera_para) 
+          num_left_time, if_exist = shield_hit([int(arr_pos_eo[0][0]), int(arr_pos_eo[0][1])  ], arr_EffectObjects[num_eo][2], player.num_scale, (  0,  0,  0), (255,255,255), arr_EffectObjects[num_eo][3], arr_EffectObjects[num_eo][4], screen) 
+          arr_EffectObjects[num_eo][3] = num_left_time
+          arr_EffectObjects[num_eo][5] = if_exist
+        
+        #print(num_EffObj, num_MotObj, num_UncObj)
+    
+    #print("number of detecting objects: {0:d}".format(num_detect))
+              
+    # --------------------------------------- #
+    #           Checking Arrays               #
+    # --------------------------------------- #
+    
+        # Pop out if object is not existing anymore (if_exist = False)
+        for num_mo in range(num_MotObj-1, -1, -1):
+          if arr_MotionObjects[num_mo].if_exist == False:
+            obj_s_explo.play()
+            arr_MotionObjects.pop(num_mo)
+    
+        for num_uo in range(num_UncObj-1, -1, -1):
+          if arr_UncontrolObjects[num_uo].if_exist == False:
+            arr_UncontrolObjects.pop(num_uo)
+    
+        for num_eo in range(num_EffObj-1, -1, -1):
+          if arr_EffectObjects[num_eo][5] == False:
+            arr_EffectObjects.pop(num_eo)
+    
+        #   Processing game information
+        num_second  = num_time_scale * time_tick / 1000   # to 0.1 second
+        clock.tick(120/ num_time_scale)
+        pygame.display.flip()
+    
+        if num_time_limit != 0:
+            if num_time_scale * time_tick / 1000 >= num_time_limit:
+                game_quit()
 
 
 if __name__ == "__main__":
-  #main_game([ 500 , 400])
-  main_game([ 1500 , 800], num_uni_scale=2.0)
-  #main_game([  800 , 640], num_uni_scale=0.9)
+  main_game([ 1500 , 800], num_uni_scale=1.2)
 
   #cProfile.run(main_game([1900,900] ))
